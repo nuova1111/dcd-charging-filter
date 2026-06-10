@@ -8,49 +8,363 @@ jobs:
       - name: 检出代码
         uses: actions/checkout@v4
 
-      - name: 安装Node.js 24（GitHub官方推荐）
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-
-      - name: 初始化Capacitor项目（指定兼容版本）
+      - name: 创建纯原生WKWebView项目
         run: |
-          npm init -y
-          npm install @capacitor/core@6.0.0 @capacitor/ios@6.0.0
-          npx cap init --web-dir . "查找充电券" "com.dcd.charging.filter"
-          npx cap add ios
+          # 创建项目目录
+          mkdir -p DCDFilter
+          cd DCDFilter
 
-      - name: 配置强制外部浏览器跳转
-        run: |
-          echo '{
-            "appId": "com.dcd.charging.filter",
-            "appName": "查找充电券",
-            "webDir": ".",
-            "server": {
-              "allowNavigation": []
-            },
-            "ios": {
-              "allowsLinkPreview": false
-            }
-          }' > capacitor.config.json
+          # 创建Info.plist
+          cat > Info.plist << 'EOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>CFBundleDevelopmentRegion</key>
+              <string>en</string>
+              <key>CFBundleExecutable</key>
+              <string>$(EXECUTABLE_NAME)</string>
+              <key>CFBundleIdentifier</key>
+              <string>com.dcd.charging.filter</string>
+              <key>CFBundleInfoDictionaryVersion</key>
+              <string>6.0</string>
+              <key>CFBundleName</key>
+              <string>查找充电券</string>
+              <key>CFBundlePackageType</key>
+              <string>APPL</string>
+              <key>CFBundleShortVersionString</key>
+              <string>1.0</string>
+              <key>CFBundleVersion</key>
+              <string>1</string>
+              <key>LSRequiresIPhoneOS</key>
+              <true/>
+              <key>UIApplicationSceneManifest</key>
+              <dict>
+                  <key>UIApplicationSupportsMultipleScenes</key>
+                  <false/>
+                  <key>UISceneConfigurations</key>
+                  <dict>
+                      <key>UIWindowSceneSessionRoleApplication</key>
+                      <array>
+                          <dict>
+                              <key>UISceneConfigurationName</key>
+                              <string>Default Configuration</string>
+                              <key>UISceneDelegateClassName</key>
+                              <string>SceneDelegate</string>
+                          </dict>
+                      </array>
+                  </dict>
+              </dict>
+              <key>UILaunchStoryboardName</key>
+              <string>LaunchScreen</string>
+              <key>UIRequiredDeviceCapabilities</key>
+              <array>
+                  <string>arm64</string>
+              </array>
+              <key>UISupportedInterfaceOrientations</key>
+              <array>
+                  <string>UIInterfaceOrientationPortrait</string>
+              </array>
+          </dict>
+          </plist>
+          EOF
 
-      - name: 构建未签名IPA（修复Xcode 16签名参数）
+          # 创建AppDelegate.swift
+          cat > AppDelegate.swift << 'EOF'
+          import UIKit
+
+          @main
+          class AppDelegate: UIResponder, UIApplicationDelegate {
+              func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+                  return true
+              }
+          }
+          EOF
+
+          # 创建SceneDelegate.swift（核心：WKWebView加载本地HTML）
+          cat > SceneDelegate.swift << 'EOF'
+          import UIKit
+          import WebKit
+
+          class SceneDelegate: UIResponder, UIWindowSceneDelegate {
+              var window: UIWindow?
+
+              func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
+                  guard let windowScene = (scene as? UIWindowScene) else { return }
+                  
+                  let window = UIWindow(windowScene: windowScene)
+                  self.window = window
+                  
+                  let webView = WKWebView(frame: window.bounds)
+                  webView.configuration.preferences.javaScriptEnabled = true
+                  
+                  // 强制所有链接在外部浏览器打开
+                  webView.navigationDelegate = self
+                  
+                  // 加载本地index.html
+                  if let url = Bundle.main.url(forResource: "index", withExtension: "html") {
+                      webView.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent())
+                  }
+                  
+                  window.rootViewController = UIViewController()
+                  window.rootViewController?.view = webView
+                  window.makeKeyAndVisible()
+              }
+          }
+
+          extension SceneDelegate: WKNavigationDelegate {
+              func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+                  // 只有本地文件允许在WebView内打开
+                  if navigationAction.request.url?.isFileURL == true {
+                      decisionHandler(.allow)
+                      return
+                  }
+                  
+                  // 所有外部链接都跳转到系统浏览器
+                  if let url = navigationAction.request.url {
+                      UIApplication.shared.open(url)
+                  }
+                  decisionHandler(.cancel)
+              }
+          }
+          EOF
+
+          # 创建启动页
+          cat > LaunchScreen.storyboard << 'EOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="22505" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" launchScreen="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="01J-lp-oVM">
+              <device id="retina6_1" orientation="portrait" appearance="light"/>
+              <dependencies>
+                  <deployment identifier="iOS"/>
+                  <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="22504"/>
+                  <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+              </dependencies>
+              <scenes>
+                  <scene sceneID="EHf-IW-A2E">
+                      <objects>
+                          <viewController id="01J-lp-oVM" sceneMemberID="viewController">
+                              <view key="view" contentMode="scaleToFill" id="Ze5-6b-2t3">
+                                  <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
+                                  <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                  <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                              </view>
+                          </viewController>
+                      </objects>
+                  </scene>
+              </scenes>
+          </document>
+          EOF
+
+          # 复制你的index.html文件到项目中
+          cp ../index.html .
+
+          # 创建Xcode项目文件
+          cat > DCDFilter.xcodeproj/project.pbxproj << 'EOF'
+          // !$*UTF8*$!
+          {
+              archiveVersion = 1;
+              classes = {
+              };
+              objectVersion = 56;
+              objects = {
+                  089C1658FE840E0C002EA6DB = {
+                      isa = PBXFileReference;
+                      lastKnownFileType = text.html;
+                      path = index.html;
+                      sourceTree = "<group>";
+                  };
+                  089C1659FE840E0C002EA6DB = {
+                      isa = PBXFileReference;
+                      lastKnownFileType = sourcecode.swift;
+                      path = AppDelegate.swift;
+                      sourceTree = "<group>";
+                  };
+                  089C165AFE840E0C002EA6DB = {
+                      isa = PBXFileReference;
+                      lastKnownFileType = sourcecode.swift;
+                      path = SceneDelegate.swift;
+                      sourceTree = "<group>";
+                  };
+                  089C165BFE840E0C002EA6DB = {
+                      isa = PBXFileReference;
+                      lastKnownFileType = file.storyboard;
+                      path = LaunchScreen.storyboard;
+                      sourceTree = "<group>";
+                  };
+                  089C165CFE840E0C002EA6DB = {
+                      isa = PBXFileReference;
+                      lastKnownFileType = text.plist.xml;
+                      path = Info.plist;
+                      sourceTree = "<group>";
+                  };
+                  089C165DFE840E0C002EA6DB = {
+                      isa = PBXGroup;
+                      children = (
+                          089C1658FE840E0C002EA6DB,
+                          089C1659FE840E0C002EA6DB,
+                          089C165AFE840E0C002EA6DB,
+                          089C165BFE840E0C002EA6DB,
+                          089C165CFE840E0C002EA6DB,
+                      );
+                      path = DCDFilter;
+                      sourceTree = "<group>";
+                  };
+                  089C165EFE840E0C002EA6DB = {
+                      isa = PBXGroup;
+                      children = (
+                          089C165DFE840E0C002EA6DB,
+                      );
+                      name = DCDFilter;
+                      sourceTree = "<group>";
+                  };
+                  089C165FFE840E0C002EA6DB = {
+                      isa = PBXProject;
+                      buildConfigurationList = 089C1662FE840E0C002EA6DB;
+                      compatibilityVersion = "Xcode 14.0";
+                      hasScannedForEncodings = 0;
+                      mainGroup = 089C165EFE840E0C002EA6DB;
+                      productRefGroup = 089C1660FE840E0C002EA6DB;
+                      projectDirPath = "";
+                      projectRoot = "";
+                      targets = (
+                          089C1666FE840E0C002EA6DB,
+                      );
+                  };
+                  089C1660FE840E0C002EA6DB = {
+                      isa = PBXGroup;
+                      children = (
+                          089C1667FE840E0C002EA6DB,
+                      );
+                      name = Products;
+                      sourceTree = "<group>";
+                  };
+                  089C1662FE840E0C002EA6DB = {
+                      isa = XCConfigurationList;
+                      buildConfigurations = (
+                          089C1663FE840E0C002EA6DB,
+                          089C1664FE840E0C002EA6DB,
+                      );
+                      defaultConfigurationIsVisible = 0;
+                      defaultConfigurationName = Release;
+                  };
+                  089C1663FE840E0C002EA6DB = {
+                      isa = XCBuildConfiguration;
+                      buildSettings = {
+                          ALWAYS_SEARCH_USER_PATHS = NO;
+                          ARCHS = arm64;
+                          ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+                          CODE_SIGN_IDENTITY = "";
+                          CODE_SIGNING_ALLOWED = NO;
+                          CODE_SIGNING_REQUIRED = NO;
+                          INFOPLIST_FILE = DCDFilter/Info.plist;
+                          IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+                          LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+                          PRODUCT_NAME = "$(TARGET_NAME)";
+                          SWIFT_VERSION = 5.0;
+                          TARGETED_DEVICE_FAMILY = 1;
+                      };
+                      name = Debug;
+                  };
+                  089C1664FE840E0C002EA6DB = {
+                      isa = XCBuildConfiguration;
+                      buildSettings = {
+                          ALWAYS_SEARCH_USER_PATHS = NO;
+                          ARCHS = arm64;
+                          ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+                          CODE_SIGN_IDENTITY = "";
+                          CODE_SIGNING_ALLOWED = NO;
+                          CODE_SIGNING_REQUIRED = NO;
+                          INFOPLIST_FILE = DCDFilter/Info.plist;
+                          IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+                          LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+                          PRODUCT_NAME = "$(TARGET_NAME)";
+                          SWIFT_VERSION = 5.0;
+                          TARGETED_DEVICE_FAMILY = 1;
+                      };
+                      name = Release;
+                  };
+                  089C1666FE840E0C002EA6DB = {
+                      isa = PBXNativeTarget;
+                      buildConfigurationList = 089C1668FE840E0C002EA6DB;
+                      buildPhases = (
+                          089C1669FE840E0C002EA6DB,
+                          089C166AFE840E0C002EA6DB,
+                      );
+                      buildRules = (
+                      );
+                      dependencies = (
+                      );
+                      name = DCDFilter;
+                      productName = DCDFilter;
+                      productReference = 089C1667FE840E0C002EA6DB;
+                      productType = "com.apple.product-type.application";
+                  };
+                  089C1667FE840E0C002EA6DB = {
+                      isa = PBXFileReference;
+                      explicitFileType = wrapper.application;
+                      includeInIndex = 0;
+                      path = DCDFilter.app;
+                      sourceTree = BUILT_PRODUCTS_DIR;
+                  };
+                  089C1668FE840E0C002EA6DB = {
+                      isa = XCConfigurationList;
+                      buildConfigurations = (
+                          089C1669FE840E0C002EA6DB,
+                          089C166AFE840E0C002EA6DB,
+                      );
+                      defaultConfigurationIsVisible = 0;
+                      defaultConfigurationName = Release;
+                  };
+                  089C1669FE840E0C002EA6DB = {
+                      isa = XCBuildConfiguration;
+                      buildSettings = {
+                      };
+                      name = Debug;
+                  };
+                  089C166AFE840E0C002EA6DB = {
+                      isa = XCBuildConfiguration;
+                      buildSettings = {
+                      };
+                      name = Release;
+                  };
+                  089C166BFE840E0C002EA6DB = {
+                      isa = PBXSourcesBuildPhase;
+                      buildActionMask = 2147483647;
+                      files = (
+                          089C1659FE840E0C002EA6DB,
+                          089C165AFE840E0C002EA6DB,
+                      );
+                      runOnlyForDeploymentPostprocessing = 0;
+                  };
+                  089C166CFE840E0C002EA6DB = {
+                      isa = PBXResourcesBuildPhase;
+                      buildActionMask = 2147483647;
+                      files = (
+                          089C1658FE840E0C002EA6DB,
+                          089C165BFE840E0C002EA6DB,
+                      );
+                      runOnlyForDeploymentPostprocessing = 0;
+                  };
+              };
+              rootObject = 089C165FFE840E0C002EA6DB;
+          }
+          EOF
+
+      - name: 编译生成未签名IPA
         run: |
-          cd ios/App
-          xcodebuild -scheme App -configuration Release -archivePath ../App.xcarchive archive \
+          cd DCDFilter
+          xcodebuild -project DCDFilter.xcodeproj -scheme DCDFilter -configuration Release -archivePath DCDFilter.xcarchive archive \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_IDENTITY="" \
-            AD_HOC_CODE_SIGNING_ALLOWED=NO
+            CODE_SIGNING_ALLOWED=NO
           
           xcodebuild -exportArchive \
-            -archivePath ../App.xcarchive \
-            -exportPath ../ \
-            -exportOptionsPlist ../../exportOptions.plist
+            -archivePath DCDFilter.xcarchive \
+            -exportPath . \
+            -exportOptionsPlist ../exportOptions.plist
 
       - name: 上传IPA文件
         uses: actions/upload-artifact@v4
         with:
           name: 查找充电券-未签名IPA
-          path: ios/App.ipa
+          path: DCDFilter/DCDFilter.ipa
