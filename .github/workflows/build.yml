@@ -3,20 +3,20 @@ on: [push]
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: macos-15
     steps:
       - name: 检出代码
         uses: actions/checkout@v4
 
-      - name: 安装Node.js
+      - name: 安装Node.js 24（GitHub官方推荐）
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
 
-      - name: 初始化Capacitor项目
+      - name: 初始化Capacitor项目（指定兼容版本）
         run: |
           npm init -y
-          npm install @capacitor/core @capacitor/ios
+          npm install @capacitor/core@6.0.0 @capacitor/ios@6.0.0
           npx cap init --web-dir . "查找充电券" "com.dcd.charging.filter"
           npx cap add ios
 
@@ -34,18 +34,20 @@ jobs:
             }
           }' > capacitor.config.json
 
-      - name: 构建未签名IPA
+      - name: 构建未签名IPA（修复Xcode 16签名参数）
         run: |
-          cd ios
-          xcodebuild -scheme App -configuration Release -archivePath App.xcarchive archive \
+          cd ios/App
+          xcodebuild -scheme App -configuration Release -archivePath ../App.xcarchive archive \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_IDENTITY="" \
+            AD_HOC_CODE_SIGNING_ALLOWED=NO
           
           xcodebuild -exportArchive \
-            -archivePath App.xcarchive \
-            -exportPath . \
-            -exportOptionsPlist ../exportOptions.plist
+            -archivePath ../App.xcarchive \
+            -exportPath ../ \
+            -exportOptionsPlist ../../exportOptions.plist
 
       - name: 上传IPA文件
         uses: actions/upload-artifact@v4
