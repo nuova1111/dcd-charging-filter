@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>懂车帝充电券筛选器</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 16px;
+            padding-bottom: 80px;
+        }
+        .container { max-width: 600px; margin: 0 auto; }
+        .card { 
+            background: white; 
+            border-radius: 12px; 
+            padding: 20px; 
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .title { 
+            font-size: 20px; 
+            font-weight: 600; 
+            text-align: center; 
+            margin-bottom: 20px;
+            color: #1a1a1a;
+        }
+        .input-group { margin-bottom: 16px; }
+        label { 
+            display: block; 
+            margin-bottom: 6px; 
+            font-size: 14px;
+            color: #666;
+            font-weight: 500;
+        }
+        input, select { 
+            width: 100%; 
+            padding: 12px 16px; 
+            border: 1px solid #e0e0e0; 
+            border-radius: 8px; 
+            font-size: 16px;
+            outline: none;
+            background: white;
+        }
+        input:focus, select:focus { border-color: #ff9500; }
+        .switch-group {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            padding: 12px;
+            background: #fff3e0;
+            border-radius: 8px;
+        }
+        .switch {
+            position: relative;
+            width: 50px;
+            height: 26px;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 26px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider { background-color: #ff9500; }
+        input:checked + .slider:before { transform: translateX(24px); }
+        .btn-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        button { 
+            flex: 1;
+            padding: 14px; 
+            background: #ff9500; 
+            color: white; 
+            border: none; 
+            border-radius: 8px; 
+            font-size: 16px; 
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:disabled { 
+            background: #999; 
+            cursor: not-allowed;
+        }
+        .btn-danger {
+            background: #ff3b30;
+        }
+        .btn-success {
+            background: #34c759;
+        }
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+            flex: none;
+        }
+        .progress { margin: 20px 0; }
+        .progress-bar { 
+            height: 8px; 
+            background: #eee; 
+            border-radius: 4px; 
+            overflow: hidden;
+        }
+        .progress-fill { 
+            height: 100%; 
+            background: #ff9500; 
+            width: 0%; 
+            transition: width 0.3s;
+        }
+        .status { 
+            text-align: center; 
+            margin-top: 10px; 
+            color: #666;
+            font-size: 14px;
+        }
+        .result-item { 
+            padding: 12px; 
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .result-item:last-child { border-bottom: none; }
+        .charging-coupon { 
+            background: #fff3e0; 
+            border-left: 4px solid #ff9500;
+            padding-left: 8px;
+        }
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+        .result-id { font-weight: 600; color: #ff9500; }
+        .result-title { 
+            font-size: 14px; 
+            color: #333; 
+            margin-bottom: 4px;
+            cursor: pointer;
+        }
+        .result-note {
+            font-size: 12px;
+            color: #ff9500;
+            margin-bottom: 4px;
+            font-style: italic;
+        }
+        .result-score { font-size: 12px; color: #999; margin-bottom: 4px; }
+        .result-url { 
+            font-size: 13px; 
+            color: #007aff; 
+            word-break: break-all;
+            text-decoration: underline;
+            cursor: pointer;
+            margin-bottom: 8px;
+        }
+        .result-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #e0e0e0;
+            margin-bottom: 16px;
+        }
+        .tab {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+        }
+        .tab.active {
+            border-bottom-color: #ff9500;
+            color: #ff9500;
+            font-weight: 500;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .browser-select {
+            margin-bottom: 16px;
+        }
+        .jump-guide {
+            padding: 12px;
+            background: #e3f2fd;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 13px;
+            color: #1976d2;
+        }
+        .history-item {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            overflow: hidden;
+        }
+        .history-header {
+            padding: 12px;
+            background: #f9f9f9;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .history-content {
+            padding: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        .history-content.expanded {
+            max-height: 2000px;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+            font-size: 14px;
+        }
+        .note-input {
+            margin-top: 8px;
+            padding: 8px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            font-size: 13px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">懂车帝充电券筛选器</h1>
+        
+        <div class="card">
+            <div class="input-group">
+                <label>起始ID</label>
+                <input type="number" id="startId" value="34000" placeholder="输入起始ID">
+            </div>
+            <div class="input-group">
+                <label>结束ID</label>
+                <input type="number" id="endId" value="34600" placeholder="输入结束ID">
+            </div>
+            <div class="input-group">
+                <label>扫描速度</label>
+                <select id="speed">
+                    <option value="2">低速稳定（2线程）</option>
+                    <option value="4" selected>中速平衡（4线程，推荐）</option>
+                    <option value="6">高速极速（6线程）</option>
+                </select>
+            </div>
+            <div class="input-group browser-select">
+                <label>默认打开浏览器</label>
+                <select id="defaultBrowser">
+                    <option value="default">系统默认浏览器</option>
+                    <option value="chrome">Google Chrome</option>
+                    <option value="firefox">Mozilla Firefox</option>
+                </select>
+            </div>
+            
+            <div class="switch-group">
+                <span><strong>只显示充电券活动</strong>（推荐开启）</span>
+                <label class="switch">
+                    <input type="checkbox" id="onlyCharging" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+            
+            <div class="btn-group">
+                <button id="scanBtn" onclick="startScan()">开始扫描</button>
+                <button class="btn-danger" onclick="clearResults()">清空结果</button>
+            </div>
+            
+            <div class="progress">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <p class="status" id="status">准备就绪 | 全功能最终版</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab('results')">扫描结果</div>
+                <div class="tab" onclick="switchTab('favorites')">我的收藏</div>
+                <div class="tab" onclick="switchTab('history')">扫描历史</div>
+            </div>
+            
+            <!-- 扫描结果标签页 -->
+            <div id="results-tab" class="tab-content active">
+                <div class="jump-guide">
+                    💡 所有链接只会在外部浏览器打开，APP内不会跳转
+                </div>
+                <button class="btn-success" id="openAllBtn" onclick="openAllValid()" disabled style="width:100%;margin-bottom:16px;">
+                    一键打开所有充电券活动
+                </button>
+                <h2 id="validTitle">⚡ 充电券活动 (0)</h2>
+                <div id="validResults"></div>
+            </div>
+            
+            <!-- 收藏夹标签页 -->
+            <div id="favorites-tab" class="tab-content">
+                <h2>⭐ 我的收藏</h2>
+                <div id="favoriteResults"></div>
+            </div>
+            
+            <!-- 历史记录标签页 -->
+            <div id="history-tab" class="tab-content">
+                <h2>📜 扫描历史</h2>
+                <div id="historyResults"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ====================== 全局数据存储 ======================
+        let validUrls = [];
+        let favorites = JSON.parse(localStorage.getItem('dcd_favorites') || '[]');
+        let notes = JSON.parse(localStorage.getItem('dcd_notes') || '{}');
+        let isScanning = false;
+
+        // 平台检测
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        const isAndroid = /Android/.test(navigator.userAgent);
+
+        // ====================== 跳转逻辑终极修复 ======================
+        // 核心：永远使用window.open，绝对不使用window.location.href
+        function openInBrowser(url) {
+            // 关键：使用_blank目标，iOS会自动跳转到Safari，APP不跳转
+            window.open(url, '_blank');
+            // 阻止任何默认行为
+            return false;
+        }
+
+        // 一键打开所有（iOS会在Safari同时打开所有标签页）
+        function openAllValid() {
+            const chargingUrls = validUrls.filter(item => item.isCharging);
+            if (chargingUrls.length === 0) return;
+            
+            if (chargingUrls.length > 8) {
+                if (!confirm(`即将打开 ${chargingUrls.length} 个页面，确定继续吗？`)) {
+                    return;
+                }
+            }
+            
+            // 同时打开所有页面，间隔200ms避免被系统拦截
+            chargingUrls.forEach((item, index) => {
+                setTimeout(() => {
+                    window.open(item.url, '_blank');
+                }, index * 200);
+            });
+            
+            // 执行完后返回false，阻止任何页面跳转
+            return false;
+        }
+        // ==========================================================
+
+        // 核心关键词
+        const CORE_KEYWORDS = [
+            { keyword: "充电券", score: 40 },
+            { keyword: "充电优惠券", score: 40 },
+            { keyword: "首次认证", score: 38 },
+            { keyword: "加车认证", score: 38 },
+            { keyword: "充电补贴", score: 35 },
+            { keyword: "免费充电", score: 35 },
+            { keyword: "车主认证", score: 35 },
+            { keyword: "充电", score: 35 },
+            { keyword: "充电优惠", score: 32 },
+            { keyword: "充电立减", score: 32 },
+            { keyword: "电费补贴", score: 32 },
+            { keyword: "电费券", score: 32 },
+            { keyword: "车辆认证", score: 32 },
+            { keyword: "充电红包", score: 30 },
+            { keyword: "充电抵扣", score: 30 },
+            { keyword: "充电权益", score: 30 },
+            { keyword: "充电福利", score: 30 },
+            { keyword: "充电奖励", score: 30 },
+            { keyword: "充电金", score: 30 }
+        ];
+
+        // 活动通用特征
+        const ACTIVITY_FEATURES = [
+            { keyword: "立即领取", score: 20 },
+            { keyword: "马上领取", score: 20 },
+            { keyword: "点击领取", score: 15 },
+            { keyword: "活动时间", score: 15 },
+            { keyword: "活动规则", score: 10 },
+            { keyword: "参与方式", score: 10 },
+            { keyword: "奖品设置", score: 10 },
+            { keyword: "中奖规则", score: 10 }
+        ];
+
+        // 一票否决关键词
+        const BLOCK_KEYWORDS = [
+            "汽车", "车型", "评测", "试驾", "上市", "预售", "报价", "价格",
+            "配置", "参数", "续航", "加速", "制动", "油耗", "动力", "外观",
+            "内饰", "空间", "经销商", "4S店", "置换", "补贴政策", "政府补贴"
+        ];
+
+        // 其他福利关键词
+        const OTHER_BENEFITS = [
+            "加油券", "优惠券", "答题", "抽奖", "签到", "金币", "福利",
+            "直减券", "领券", "加油直减", "养车", "车主福利"
+        ];
+
+        // 判定阈值
+        const THRESHOLD = 50;
+
+        // 页面加载时初始化
+        window.onload = function() {
+            loadResults();
+            loadFavorites();
+            loadHistory();
+        };
+
+        // 多维度评分识别算法
+        function calculateScore(title, content) {
+            let score = 0;
+            let matchedKeywords = [];
+
+            for (const kw of BLOCK_KEYWORDS) {
+                if (title.includes(kw)) {
+                    return { score: 0, matched: [] };
+                }
+            }
+
+            for (const item of CORE_KEYWORDS) {
+                if (content.includes(item.keyword)) {
+                    score += item.score;
+                    matchedKeywords.push(item.keyword);
+                }
+            }
+
+            for (const item of ACTIVITY_FEATURES) {
+                if (content.includes(item.keyword)) {
+                    score += item.score;
+                    matchedKeywords.push(item.keyword);
+                }
+            }
+
+            if (content.length > 5000 && content.length < 50000) {
+                score += 5;
+            }
+
+            return { score, matched: matchedKeywords };
+        }
+
+        // 检查单个页面
+        async function checkPage(id) {
+            const url = `https://api.dcarapi.com/motor/blitz/activity/${id}`;
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000);
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Linux; Android 13; SM-G998B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Mobile Safari/537.36',
+                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                        'Accept-Encoding': 'gzip, deflate, br'
+                    },
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                const text = await response.text();
+                
+                if (text.length < 50) return null;
+                if (text.includes("网页解析失败") || text.includes("活动已下线") || text.includes("页面不存在")) {
+                    return null;
+                }
+
+                const titleMatch = text.match(/<title>(.*?)<\/title>/i);
+                const title = titleMatch ? titleMatch[1].trim() : "";
+
+                const result = calculateScore(title, text);
+
+                if (result.score >= THRESHOLD) {
+                    return { 
+                        id, 
+                        url, 
+                        title: `${title}`, 
+                        score: result.score,
+                        matched: result.matched.join(','),
+                        isCharging: true 
+                    };
+                }
+
+                if (!document.getElementById('onlyCharging').checked) {
+                    for (const kw of OTHER_BENEFITS) {
+                        if (text.includes(kw)) {
+                            return { 
+                                id, 
+                                url, 
+                                title: `${title} (${kw})`, 
+                                score: 0,
+                                matched: kw,
+                                isCharging: false 
+                            };
+                        }
+                    }
+                }
+
+                return null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        // 多线程扫描器
+        async function scanWorker(queue, delay) {
+            while (queue.length > 0 && isScanning) {
+                const id = queue.shift();
+                const result = await checkPage(id);
+                
+                if (result) {
+                    validUrls.push(result);
+                    requestAnimationFrame(() => {
+                        addResultItem(result, 'validResults');
+                        const chargingCount = validUrls.filter(item => item.isCharging).length;
+                        document.getElementById('validTitle').textContent = `⚡ 充电券活动 (${chargingCount})`;
+                        document.getElementById('openAllBtn').disabled = false;
+                    });
+                }
+                
+                await new Promise(r => setTimeout(r, delay));
+            }
+        }
+
+        // 开始扫描
+        async function startScan() {
+            if (isScanning) return;
+            isScanning = true;
+            
+            const startId = parseInt(document.getElementById('startId').value);
+            const endId = parseInt(document.getElementById('endId').value);
+            const concurrency = parseInt(document.getElementById('speed').value);
+            const delay = 1000 / concurrency;
+            
+            if (isNaN(startId) || isNaN(endId) || startId > endId) {
+                alert("请输入有效的ID范围！");
+                isScanning = false;
+                return;
+            }
+            
+            const total = endId - startId + 1;
+            validUrls = [];
+            
+            document.getElementById('scanBtn').disabled = true;
+            document.getElementById('openAllBtn').disabled = true;
+            document.getElementById('validResults').innerHTML = '';
+            document.getElementById('validTitle').textContent = '⚡ 充电券活动 (0)';
+            
+            const queue = [];
+            for (let i = startId; i <= endId; i++) {
+                queue.push(i);
+            }
+            
+            const workers = [];
+            for (let i = 0; i < concurrency; i++) {
+                workers.push(scanWorker(queue, delay));
+            }
+            
+            const progressInterval = setInterval(() => {
+                const done = total - queue.length;
+                const progress = (done / total) * 100;
+                document.getElementById('progressFill').style.width = `${progress}%`;
+                const chargingCount = validUrls.filter(item => item.isCharging).length;
+                document.getElementById('status').textContent = 
+                    `扫描中: ${done}/${total} | 充电券: ${chargingCount} | 并发: ${concurrency}线程`;
+            }, 200);
+            
+            await Promise.all(workers);
+            clearInterval(progressInterval);
+            
+            document.getElementById('progressFill').style.width = '100%';
+            const chargingCount = validUrls.filter(item => item.isCharging).length;
+            document.getElementById('status').textContent = 
+                `扫描完成！共找到 ${chargingCount} 个充电券活动`;
+            document.getElementById('scanBtn').disabled = false;
+            isScanning = false;
+            
+            saveResults();
+            saveHistory(startId, endId, chargingCount, validUrls);
+            
+            if (chargingCount === 0) {
+                alert("本次扫描未找到充电券活动");
+            }
+        }
+
+        // ====================== 结果项通用渲染函数 ======================
+        function addResultItem(result, containerId, showDelete = false) {
+            const div = document.createElement('div');
+            div.className = `result-item ${result.isCharging ? 'charging-coupon' : ''}`;
+            div.dataset.url = result.url;
+            
+            const note = notes[result.url] || '';
+            const isFavorite = favorites.some(f => f.url === result.url);
+            
+            div.innerHTML = `
+                <div class="result-header">
+                    <div class="result-id">ID: ${result.id} ${result.isCharging ? '⚡' : ''}</div>
+                    <div class="result-actions">
+                        <button class="btn-small ${isFavorite ? 'btn-success' : ''}" onclick="toggleFavorite('${result.url}')">
+                            ${isFavorite ? '⭐ 已收藏' : '收藏'}
+                        </button>
+                        ${showDelete ? `<button class="btn-small btn-danger" onclick="deleteResult('${containerId}', '${result.url}')">删除</button>` : ''}
+                    </div>
+                </div>
+                <div class="result-title" onclick="openInBrowser('${result.url}'); return false;">${result.title}</div>
+                ${note ? `<div class="result-note">📝 ${note}</div>` : ''}
+                ${result.isCharging && result.score ? `<div class="result-score">匹配得分: ${result.score} | 特征: ${result.matched}</div>` : ''}
+                <div class="result-url" onclick="openInBrowser('${result.url}'); return false;">${result.url}</div>
+                <input type="text" class="note-input" placeholder="添加备注..." value="${note}" 
+                       onchange="saveNote('${result.url}', this.value)">
+            `;
+            
+            document.getElementById(containerId).appendChild(div);
+        }
+
+        // ====================== 收藏夹功能 ======================
+        function toggleFavorite(url) {
+            const index = favorites.findIndex(f => f.url === url);
+            if (index > -1) {
+                // 取消收藏
+                favorites.splice(index, 1);
+            } else {
+                // 添加收藏
+                const item = validUrls.find(v => v.url === url) || 
+                            favorites.find(f => f.url === url) ||
+                            getHistoryItemByUrl(url);
+                if (item) {
+                    favorites.push(item);
+                }
+            }
+            
+            localStorage.setItem('dcd_favorites', JSON.stringify(favorites));
+            refreshAllViews();
+        }
+
+        function loadFavorites() {
+            const container = document.getElementById('favoriteResults');
+            container.innerHTML = '';
+            
+            if (favorites.length === 0) {
+                container.innerHTML = '<div class="empty-state">还没有收藏任何活动</div>';
+                return;
+            }
+            
+            favorites.forEach(item => {
+                addResultItem(item, 'favoriteResults', true);
+            });
+        }
+
+        // ====================== 历史记录增强功能 ======================
+        function saveHistory(start, end, count, results) {
+            const history = JSON.parse(localStorage.getItem('dcd_charging_history') || '[]');
+            history.unshift({
+                id: Date.now(),
+                time: new Date().toLocaleString(),
+                start: start,
+                end: end,
+                count: count,
+                results: results
+            });
+            
+            if (history.length > 10) history.pop();
+            localStorage.setItem('dcd_charging_history', JSON.stringify(history));
+            loadHistory();
+        }
+
+        function loadHistory() {
+            const history = JSON.parse(localStorage.getItem('dcd_charging_history') || '[]');
+            const container = document.getElementById('historyResults');
+            container.innerHTML = '';
+            
+            if (history.length === 0) {
+                container.innerHTML = '<div class="empty-state">还没有扫描记录</div>';
+                return;
+            }
+            
+            history.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'history-item';
+                div.innerHTML = `
+                    <div class="history-header" onclick="toggleHistory(${item.id})">
+                        <div>
+                            <strong>${item.time}</strong><br>
+                            <small>范围: ${item.start} - ${item.end} | 找到: ${item.count} 个</small>
+                        </div>
+                        <span>▼</span>
+                    </div>
+                    <div class="history-content" id="history-${item.id}"></div>
+                `;
+                container.appendChild(div);
+                
+                // 预加载历史结果
+                const contentDiv = document.getElementById(`history-${item.id}`);
+                item.results.forEach(result => {
+                    const resultDiv = document.createElement('div');
+                    resultDiv.className = `result-item ${result.isCharging ? 'charging-coupon' : ''}`;
+                    
+                    const note = notes[result.url] || '';
+                    const isFavorite = favorites.some(f => f.url === result.url);
+                    
+                    resultDiv.innerHTML = `
+                        <div class="result-header">
+                            <div class="result-id">ID: ${result.id} ${result.isCharging ? '⚡' : ''}</div>
+                            <div class="result-actions">
+                                <button class="btn-small ${isFavorite ? 'btn-success' : ''}" onclick="toggleFavorite('${result.url}')">
+                                    ${isFavorite ? '⭐ 已收藏' : '收藏'}
+                                </button>
+                                <button class="btn-small btn-danger" onclick="deleteHistoryResult(${item.id}, '${result.url}')">删除</button>
+                            </div>
+                        </div>
+                        <div class="result-title" onclick="openInBrowser('${result.url}'); return false;">${result.title}</div>
+                        ${note ? `<div class="result-note">📝 ${note}</div>` : ''}
+                        <div class="result-url" onclick="openInBrowser('${result.url}'); return false;">${result.url}</div>
+                        <input type="text" class="note-input" placeholder="添加备注..." value="${note}" 
+                               onchange="saveNote('${result.url}', this.value)">
+                    `;
+                    contentDiv.appendChild(resultDiv);
+                });
+            });
+        }
+
+        function toggleHistory(historyId) {
+            const content = document.getElementById(`history-${historyId}`);
+            content.classList.toggle('expanded');
+        }
+
+        function deleteHistoryResult(historyId, url) {
+            if (!confirm("确定要删除这条记录吗？")) return;
+            
+            const history = JSON.parse(localStorage.getItem('dcd_charging_history') || '[]');
+            const historyItem = history.find(h => h.id === historyId);
+            if (historyItem) {
+                historyItem.results = historyItem.results.filter(r => r.url !== url);
+                historyItem.count = historyItem.results.length;
+                localStorage.setItem('dcd_charging_history', JSON.stringify(history));
+                loadHistory();
+            }
+        }
+
+        function getHistoryItemByUrl(url) {
+            const history = JSON.parse(localStorage.getItem('dcd_charging_history') || '[]');
+            for (const item of history) {
+                const result = item.results.find(r => r.url === url);
+                if (result) return result;
+            }
+            return null;
+        }
+
+        // ====================== 备注功能 ======================
+        function saveNote(url, note) {
+            notes[url] = note.trim();
+            localStorage.setItem('dcd_notes', JSON.stringify(notes));
+            refreshAllViews();
+        }
+
+        // ====================== 通用工具函数 ======================
+        function deleteResult(containerId, url) {
+            if (!confirm("确定要删除这条记录吗？")) return;
+            
+            if (containerId === 'validResults') {
+                validUrls = validUrls.filter(item => item.url !== url);
+                saveResults();
+            } else if (containerId === 'favoriteResults') {
+                favorites = favorites.filter(item => item.url !== url);
+                localStorage.setItem('dcd_favorites', JSON.stringify(favorites));
+            }
+            
+            refreshAllViews();
+        }
+
+        function saveResults() {
+            localStorage.setItem('dcd_charging_results', JSON.stringify(validUrls));
+        }
+
+        function loadResults() {
+            const saved = localStorage.getItem('dcd_charging_results');
+            if (saved) {
+                validUrls = JSON.parse(saved);
+                validUrls.forEach(result => {
+                    addResultItem(result, 'validResults');
+                });
+                const chargingCount = validUrls.filter(item => item.isCharging).length;
+                document.getElementById('validTitle').textContent = `⚡ 充电券活动 (${chargingCount})`;
+                document.getElementById('openAllBtn').disabled = validUrls.length === 0;
+            }
+        }
+
+        function clearResults() {
+            if (confirm("确定要清空当前扫描结果吗？")) {
+                validUrls = [];
+                document.getElementById('validResults').innerHTML = '';
+                document.getElementById('validTitle').textContent = '⚡ 充电券活动 (0)';
+                document.getElementById('openAllBtn').disabled = true;
+                localStorage.removeItem('dcd_charging_results');
+            }
+        }
+
+        function refreshAllViews() {
+            document.getElementById('validResults').innerHTML = '';
+            validUrls.forEach(result => addResultItem(result, 'validResults'));
+            
+            loadFavorites();
+            loadHistory();
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.querySelector(`[onclick="switchTab('${tabName}')"]`).classList.add('active');
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+        }
+    </script>
+</body>
+</html>
