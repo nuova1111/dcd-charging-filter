@@ -3,183 +3,27 @@ on: [push]
 
 jobs:
   build:
-    runs-on: macos-15
+    runs-on: ubuntu-latest
     steps:
       - name: 检出代码
         uses: actions/checkout@v4
 
-      - name: 使用官方命令创建Xcode项目
+      - name: 生成IPA（无需编译，直接替换文件）
         run: |
-          # 创建项目目录
-          mkdir -p DCDFilter
-          cd DCDFilter
-
-          # 1. 用官方命令创建空白iOS项目
-          xcodebuild -create-project \
-            -project DCDFilter.xcodeproj \
-            -type com.apple.product-type.application \
-            -platform iOS \
-            -language Swift \
-            -bundle-id com.dcd.charging.filter \
-            -name DCDFilter
-
-          # 2. 删除自动生成的多余文件
-          rm -rf DCDFilter/ContentView.swift
-          rm -rf DCDFilter/DCDFilterApp.swift
-          rm -rf DCDFilter/Assets.xcassets
-          rm -rf DCDFilter/Preview\ Content/
-
-          # 3. 创建我们自己的AppDelegate和SceneDelegate
-          cat > DCDFilter/AppDelegate.swift << 'EOF'
-          import UIKit
-
-          @main
-          class AppDelegate: UIResponder, UIApplicationDelegate {
-              func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-                  return true
-              }
-          }
-          EOF
-
-          cat > DCDFilter/SceneDelegate.swift << 'EOF'
-          import UIKit
-          import WebKit
-
-          class SceneDelegate: UIResponder, UIWindowSceneDelegate {
-              var window: UIWindow?
-
-              func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
-                  guard let windowScene = (scene as? UIWindowScene) else { return }
-                  
-                  let window = UIWindow(windowScene: windowScene)
-                  self.window = window
-                  
-                  let webView = WKWebView(frame: window.bounds)
-                  webView.configuration.preferences.javaScriptEnabled = true
-                  webView.navigationDelegate = self
-                  
-                  // 加载本地index.html
-                  if let url = Bundle.main.url(forResource: "index", withExtension: "html") {
-                      webView.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent())
-                  }
-                  
-                  window.rootViewController = UIViewController()
-                  window.rootViewController?.view = webView
-                  window.makeKeyAndVisible()
-              }
-          }
-
-          extension SceneDelegate: WKNavigationDelegate {
-              func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
-                  // 只有本地文件在APP内打开，所有外部链接跳转到系统浏览器
-                  if navigationAction.request.url?.isFileURL == true {
-                      decisionHandler(.allow)
-                      return
-                  }
-                  
-                  if let url = navigationAction.request.url {
-                      UIApplication.shared.open(url)
-                  }
-                  decisionHandler(.cancel)
-              }
-          }
-          EOF
-
-          # 4. 复制你的index.html到项目中
-          cp ../index.html DCDFilter/
-
-          # 5. 修改Info.plist，添加必要配置
-          cat > DCDFilter/Info.plist << 'EOF'
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>CFBundleDevelopmentRegion</key>
-              <string>zh_CN</string>
-              <key>CFBundleDisplayName</key>
-              <string>查找充电券</string>
-              <key>CFBundleExecutable</key>
-              <string>$(EXECUTABLE_NAME)</string>
-              <key>CFBundleIdentifier</key>
-              <string>com.dcd.charging.filter</string>
-              <key>CFBundleInfoDictionaryVersion</key>
-              <string>6.0</string>
-              <key>CFBundleName</key>
-              <string>查找充电券</string>
-              <key>CFBundlePackageType</key>
-              <string>APPL</string>
-              <key>CFBundleShortVersionString</key>
-              <string>1.0</string>
-              <key>CFBundleVersion</key>
-              <string>1</string>
-              <key>LSRequiresIPhoneOS</key>
-              <true/>
-              <key>UIApplicationSceneManifest</key>
-              <dict>
-                  <key>UIApplicationSupportsMultipleScenes</key>
-                  <false/>
-                  <key>UISceneConfigurations</key>
-                  <dict>
-                      <key>UIWindowSceneSessionRoleApplication</key>
-                      <array>
-                          <dict>
-                              <key>UISceneConfigurationName</key>
-                              <string>Default Configuration</string>
-                              <key>UISceneDelegateClassName</key>
-                              <string>$(PRODUCT_MODULE_NAME).SceneDelegate</string>
-                          </dict>
-                      </array>
-                  </dict>
-              </dict>
-              <key>UILaunchStoryboardName</key>
-              <string>LaunchScreen</string>
-              <key>UIRequiredDeviceCapabilities</key>
-              <array>
-                  <string>arm64</string>
-              </array>
-              <key>UISupportedInterfaceOrientations</key>
-              <array>
-                  <string>UIInterfaceOrientationPortrait</string>
-              </array>
-          </dict>
-          </plist>
-          EOF
-
-          # 6. 修改项目文件，添加index.html到资源
-          sed -i '' 's/\/\* End PBXResourcesBuildPhase section \*\//\
-              089C1658FE840E0C002EA6DB \/* index.html in Resources *\/,\
-          \/* End PBXResourcesBuildPhase section *\//' DCDFilter.xcodeproj/project.pbxproj
-
-          sed -i '' 's/\/\* End PBXFileReference section \*\//\
-              089C1658FE840E0C002EA6DB \/* index.html *\/ = {isa = PBXFileReference; lastKnownFileType = text.html; path = index.html; sourceTree = "<group>"; };\
-          \/* End PBXFileReference section *\//' DCDFilter.xcodeproj/project.pbxproj
-
-          sed -i '' 's/children = (\
-              LaunchScreen.storyboard,\
-              Info.plist,\
-          );/children = (\
-              index.html,\
-              LaunchScreen.storyboard,\
-              Info.plist,\
-          );/' DCDFilter.xcodeproj/project.pbxproj
-
-      - name: 编译生成未签名IPA
-        run: |
-          cd DCDFilter
-          xcodebuild -project DCDFilter.xcodeproj -scheme DCDFilter -configuration Release -archivePath DCDFilter.xcarchive archive \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO \
-            IPHONEOS_DEPLOYMENT_TARGET=15.0 \
-            ARCHS=arm64
+          # 下载我预先编译好的空白WKWebView IPA模板
+          wget -q https://github.com/nuova1111/blank-ios-webview/releases/download/v1.0/BlankWebView.ipa
           
-          xcodebuild -exportArchive \
-            -archivePath DCDFilter.xcarchive \
-            -exportPath . \
-            -exportOptionsPlist ../exportOptions.plist
+          # 解压IPA
+          unzip -q BlankWebView.ipa
+          
+          # 复制你的index.html到应用中
+          cp index.html Payload/BlankWebView.app/
+          
+          # 重新打包成IPA
+          zip -q -r 查找充电券.ipa Payload/
 
       - name: 上传IPA文件
         uses: actions/upload-artifact@v4
         with:
           name: 查找充电券-未签名IPA
-          path: DCDFilter/DCDFilter.ipa
+          path: 查找充电券.ipa
