@@ -1,0 +1,54 @@
+name: 自动打包iOS未签名IPA
+on: [push]
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: 初始化Capacitor项目
+        run: |
+          npm init -y
+          npm install @capacitor/core @capacitor/ios
+          npx cap init --web-dir . "查找充电券" "com.dcd.charging.filter"
+          npx cap add ios
+
+      - name: 配置强制外部浏览器跳转
+        run: |
+          echo '{
+            "appId": "com.dcd.charging.filter",
+            "appName": "查找充电券",
+            "webDir": ".",
+            "server": {
+              "allowNavigation": []
+            },
+            "ios": {
+              "allowsLinkPreview": false
+            }
+          }' > capacitor.config.json
+
+      - name: 构建未签名IPA
+        run: |
+          cd ios
+          xcodebuild -scheme App -configuration Release -archivePath App.xcarchive archive \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+          
+          xcodebuild -exportArchive \
+            -archivePath App.xcarchive \
+            -exportPath . \
+            -exportOptionsPlist ../exportOptions.plist
+
+      - name: 上传IPA文件
+        uses: actions/upload-artifact@v4
+        with:
+          name: 查找充电券-未签名IPA
+          path: ios/App.ipa
