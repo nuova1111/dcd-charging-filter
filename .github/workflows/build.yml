@@ -10,7 +10,7 @@ jobs:
 
       - name: 创建纯原生WKWebView项目
         run: |
-          # 创建项目目录
+          # 创建主项目目录
           mkdir -p DCDFilter
           cd DCDFilter
 
@@ -158,6 +158,9 @@ jobs:
           # 复制你的index.html文件到项目中
           cp ../index.html .
 
+          # 关键修复：先创建Xcode项目目录
+          mkdir -p DCDFilter.xcodeproj
+
           # 创建Xcode项目文件
           cat > DCDFilter.xcodeproj/project.pbxproj << 'EOF'
           // !$*UTF8*$!
@@ -252,7 +255,6 @@ jobs:
                       buildSettings = {
                           ALWAYS_SEARCH_USER_PATHS = NO;
                           ARCHS = arm64;
-                          ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
                           CODE_SIGN_IDENTITY = "";
                           CODE_SIGNING_ALLOWED = NO;
                           CODE_SIGNING_REQUIRED = NO;
@@ -270,7 +272,6 @@ jobs:
                       buildSettings = {
                           ALWAYS_SEARCH_USER_PATHS = NO;
                           ARCHS = arm64;
-                          ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
                           CODE_SIGN_IDENTITY = "";
                           CODE_SIGNING_ALLOWED = NO;
                           CODE_SIGNING_REQUIRED = NO;
@@ -287,8 +288,8 @@ jobs:
                       isa = PBXNativeTarget;
                       buildConfigurationList = 089C1668FE840E0C002EA6DB;
                       buildPhases = (
-                          089C1669FE840E0C002EA6DB,
-                          089C166AFE840E0C002EA6DB,
+                          089C166BFE840E0C002EA6DB,
+                          089C166CFE840E0C002EA6DB,
                       );
                       buildRules = (
                       );
