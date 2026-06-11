@@ -1,0 +1,15 @@
+{
+  "name": "懂车帝充电券筛选器",
+  "short_name": "充电券筛选器",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ff9500",
+  "icons": [
+    {
+      "src": "https://www.dongchedi.com/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}
