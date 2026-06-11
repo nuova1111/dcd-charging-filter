@@ -471,7 +471,7 @@
 
         // 检查单个页面
         async function checkPage(id) {
-            const url = `https://api.dcarapi.com/motor/blitz/activity/${id}`;
+const url = `https://api.allorigins.win/raw?url=https://api.dcarapi.com/motor/blitz/activity/${id}`;
             try {
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 10000);
